@@ -1,5 +1,5 @@
-# Copyright <YEAR(S)> <AUTHOR(S)>
-# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
+# © 2016 Opener B.V.
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 {
     "name": "Open sale order from invoice",
     "summary": "Show a button on the invoice view to open the related sale order",
