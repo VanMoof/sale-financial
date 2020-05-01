@@ -1,29 +1,37 @@
-# coding: utf-8
 # © 2016 Opener B.V.
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
-from openerp import api, fields, models
-from openerp.tools.translate import _
+
+from odoo import api, fields, models
+from odoo.tools.translate import _
 
 
 class AccountInvoice(models.Model):
     _inherit = 'account.invoice'
 
-    has_sale_order = fields.Boolean(compute='_get_has_sale_order')
+    has_sale_order = fields.Boolean(compute='_compute_has_sale_order')
 
     @api.multi
-    def _get_has_sale_order(self):
+    @api.depends('invoice_line_ids.sale_line_ids')
+    def _compute_has_sale_order(self):
         """ Determines if the button to show sale order will be shown on the
         invoice """
-        sales = self.env['sale.order'].search(
-            [('invoice_ids', 'in', self.ids)])
-        invoice_ids = sales.mapped('invoice_ids').ids
+        if not self.ids:
+            return True
+        self.env.cr.execute("""
+        SELECT ail.invoice_id
+        FROM account_invoice_line AS ail
+        JOIN sale_order_line_invoice_rel AS rel ON ail.id = rel.invoice_line_id
+        WHERE ail.invoice_id IN %s
+        """, (tuple(self.ids),))
+
+        invoice_ids = [row[0] for row in self.env.cr.fetchall()]
         for invoice in self:
             invoice.has_sale_order = invoice.id in invoice_ids
 
     @api.multi
     def open_sale_order(self):
-        sale_ids = self.env['sale.order'].search(
-            [('invoice_ids', 'in', self.ids)]).ids
+        self.ensure_one()
+        sale_ids = self.mapped('invoice_line_ids.sale_line_ids.order_id').ids
         return {
             'type': 'ir.actions.act_window',
             'name': _('Sales Orders'),
